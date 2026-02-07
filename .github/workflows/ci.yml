@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - uses: ramsey/composer-install@v3
+
+      - run: composer lint
+
+  phpunit:
+    name: PHPUnit - PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer
+
+      - uses: ramsey/composer-install@v3
+
+      - run: composer phpunit
+
+  behat:
+    name: Behat - PHP ${{ matrix.php }}, WP ${{ matrix.wp }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3']
+        wp: ['latest']
+        include:
+          - php: '8.4'
+            wp: 'trunk'
+    env:
+      WP_CLI_TEST_DBROOTUSER: root
+      WP_CLI_TEST_DBROOTPASS: root
+      WP_CLI_TEST_DBNAME: wp_cli_test
+      WP_CLI_TEST_DBUSER: wp_cli_test
+      WP_CLI_TEST_DBPASS: password1
+      WP_CLI_TEST_DBHOST: 127.0.0.1:3306
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: gd, imagick, mysql, zip
+          coverage: none
+          tools: composer
+
+      - uses: ramsey/composer-install@v3
+
+      - uses: shogo82148/actions-setup-mysql@v1
+        with:
+          mysql-version: '8.0'
+          auto-start: true
+          root-password: root
+          user: wp_cli_test
+          password: password1
+          my-cnf: |
+            default_authentication_plugin=mysql_native_password
+
+      - name: Prepare test database
+        run: composer prepare-tests
+
+      - name: Run Behat
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+        run: composer behat || composer behat-rerun
