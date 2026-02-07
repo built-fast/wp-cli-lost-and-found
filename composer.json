@@ -1,0 +1,56 @@
+{
+    "name": "built-fast/wp-orphanage",
+    "description": "Detect and report orphaned files in WordPress uploads directories.",
+    "type": "wp-cli-package",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "wp-cli/wp-cli": "^2.12"
+    },
+    "require-dev": {
+        "wp-cli/wp-cli-tests": "^5",
+        "phpunit/phpunit": "^11.0 || ^12.0"
+    },
+    "config": {
+        "process-timeout": 7200,
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "johnpbloch/wordpress-core-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "lock": false
+    },
+    "extra": {
+        "commands": [
+            "media find-orphans"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "WpOrphanage\\": "src/"
+        },
+        "files": [
+            "wp-orphanage-command.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WpOrphanage\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "behat": "run-behat-tests",
+        "behat-rerun": "rerun-behat-tests",
+        "lint": "run-linter-tests",
+        "phpunit": "run-php-unit-tests",
+        "prepare-tests": "install-package-tests",
+        "test": [
+            "@lint",
+            "@phpunit",
+            "@behat"
+        ]
+    }
+}
