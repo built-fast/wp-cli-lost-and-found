@@ -1,0 +1,19 @@
+parameters:
+  level: 8
+  paths:
+    - src
+  scanDirectories:
+    - vendor/wp-cli/wp-cli
+  scanFiles:
+    - vendor/wp-cli/wp-cli/php/utils.php
+  treatPhpDocTypesAsCertain: false
+  ignoreErrors:
+    # WP-CLI command signatures use untyped arrays — imposed by the framework.
+    -
+      identifier: missingType.iterableValue
+      path: src/*Command.php
+    # wpdb::prepare() expects literal-string but we interpolate the table prefix which is safe.
+    -
+      identifier: argument.type
+      path: src/OrphanScanner.php
+      count: 1

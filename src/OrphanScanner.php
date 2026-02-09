@@ -40,12 +40,15 @@ class OrphanScanner
         do {
             $offset = ($page - 1) * $perPage;
 
-            /** @var list<object{ID: int}> $attachments */
-            $attachments = $wpdb->get_results($wpdb->prepare(
-                "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' LIMIT %d OFFSET %d",
-                $perPage,
-                $offset
-            ));
+            /** @var list<\stdClass> $attachments */
+            $attachments = $wpdb->get_results(
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table prefix is safe
+                $wpdb->prepare(
+                    "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' LIMIT %d OFFSET %d",
+                    $perPage,
+                    $offset
+                )
+            );
 
             foreach ($attachments as $attachment) {
                 $file = get_post_meta((int) $attachment->ID, '_wp_attached_file', true);

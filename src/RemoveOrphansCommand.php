@@ -136,6 +136,8 @@ class RemoveOrphansCommand extends WP_CLI_Command
             $remover = new OrphanRemover($basedir, $quarantineDir);
         } catch (\RuntimeException $e) {
             WP_CLI::error($e->getMessage());
+
+            return;
         }
 
         $removalResult = $remover->remove($scanResult['orphans']);

@@ -49,10 +49,12 @@
         "behat": "run-behat-tests",
         "behat-rerun": "rerun-behat-tests",
         "lint": "run-linter-tests",
+        "phpstan": "phpstan analyse --configuration=phpstan.neon.dist",
         "phpunit": "run-php-unit-tests",
         "prepare-tests": "install-package-tests",
         "test": [
             "@lint",
+            "@phpstan",
             "@phpunit",
             "@behat"
         ]

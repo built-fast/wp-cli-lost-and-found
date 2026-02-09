@@ -94,6 +94,8 @@ class FindOrphansCommand extends WP_CLI_Command
             $result = $detector->detect($actualFiles);
         } catch (\RuntimeException $e) {
             WP_CLI::error($e->getMessage());
+
+            return; // WP_CLI::error() exits, but PHPStan doesn't know that.
         }
 
         // Step 3: Build output.
