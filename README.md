@@ -1,5 +1,10 @@
 # wp-orphanage
 
+> [!WARNING]
+> This package is in early development and may break your website or cause
+> data loss. Use with caution and test thoroughly before running on production
+> sites.
+
 Detect and remove orphaned files in WordPress uploads directories.
 
 Scans the uploads directory and cross-references against the WordPress attachment database to identify files not tracked as media library items. Supports local filesystem scanning and S3 object listings.
