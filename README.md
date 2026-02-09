@@ -1,4 +1,4 @@
-# wp-orphanage
+# wp-cli-lost-and-found
 
 > [!WARNING]
 > This package is in early development and may break your website or cause
@@ -17,13 +17,13 @@ Scans the uploads directory and cross-references against the WordPress attachmen
 ## Installation
 
 ```bash
-wp package install built-fast/wp-orphanage
+wp package install built-fast/wp-cli-lost-and-found
 ```
 
 Or load directly:
 
 ```bash
-wp --require=wp-orphanage-command.php media find-orphans
+wp --require=wp-cli-lost-and-found-command.php media find-orphans
 ```
 
 ## Commands

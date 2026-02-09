@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage\Tests;
+namespace LostAndFound\Tests;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use WpOrphanage\OrphanRemover;
+use LostAndFound\OrphanRemover;
 
 class OrphanRemoverTest extends TestCase
 {
@@ -14,7 +14,7 @@ class OrphanRemoverTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/wp-orphanage-test-' . uniqid();
+        $this->tempDir = sys_get_temp_dir() . '/wp-cli-lost-and-found-test-' . uniqid();
         mkdir($this->tempDir . '/uploads', 0755, true);
     }
 

@@ -1,5 +1,5 @@
 {
-    "name": "built-fast/wp-orphanage",
+    "name": "built-fast/wp-cli-lost-and-found",
     "description": "Detect and report orphaned files in WordPress uploads directories.",
     "type": "wp-cli-package",
     "license": "MIT",
@@ -32,15 +32,15 @@
     },
     "autoload": {
         "psr-4": {
-            "WpOrphanage\\": "src/"
+            "LostAndFound\\": "src/"
         },
         "files": [
-            "wp-orphanage-command.php"
+            "wp-cli-lost-and-found-command.php"
         ]
     },
     "autoload-dev": {
         "psr-4": {
-            "WpOrphanage\\Tests\\": "tests/"
+            "LostAndFound\\Tests\\": "tests/"
         }
     },
     "minimum-stability": "dev",

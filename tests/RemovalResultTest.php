@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage\Tests;
+namespace LostAndFound\Tests;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use WpOrphanage\RemovalResult;
+use LostAndFound\RemovalResult;
 
 class RemovalResultTest extends TestCase
 {

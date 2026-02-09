@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage;
+namespace LostAndFound;
 
 /**
  * Value object for orphan removal outcomes.

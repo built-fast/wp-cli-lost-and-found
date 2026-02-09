@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage;
+namespace LostAndFound;
 
 /**
  * Pure detection logic for finding orphaned files in WordPress uploads.

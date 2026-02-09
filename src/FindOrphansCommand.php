@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage;
+namespace LostAndFound;
 
 use WP_CLI;
 use WP_CLI_Command;

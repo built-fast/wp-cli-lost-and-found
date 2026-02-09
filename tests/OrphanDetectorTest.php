@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace WpOrphanage\Tests;
+namespace LostAndFound\Tests;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use WpOrphanage\OrphanDetector;
+use LostAndFound\OrphanDetector;
 
 class OrphanDetectorTest extends TestCase
 {

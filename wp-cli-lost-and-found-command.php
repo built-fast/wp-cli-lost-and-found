@@ -6,13 +6,13 @@ declare(strict_types=1);
  * Registers the `wp media find-orphans` and `wp media remove-orphans` commands.
  *
  * Usage:
- *   wp --require=wp-orphanage-command.php media find-orphans
+ *   wp --require=wp-cli-lost-and-found-command.php media find-orphans
  *
  * Or install as a WP-CLI package:
  *   wp package install /path/to/this/directory
  */
 
-namespace WpOrphanage;
+namespace LostAndFound;
 
 if (! class_exists('WP_CLI')) {
     return;
