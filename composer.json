@@ -8,7 +8,7 @@
         "wp-cli/wp-cli": "^2.12"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0 || ^12.0",
+        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
         "wp-cli/entity-command": "^2",
         "wp-cli/extension-command": "^2",
         "wp-cli/media-command": "^2",
