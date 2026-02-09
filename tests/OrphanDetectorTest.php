@@ -192,4 +192,90 @@ class OrphanDetectorTest extends TestCase
         $this->assertCount(0, $result['orphans']);
         $this->assertCount(0, $result['skipped']);
     }
+
+    #[Test]
+    public function it_registers_many_thumbnail_sizes(): void
+    {
+        $detector = new OrphanDetector();
+        $sizes = [];
+        $expected = ['2024/03/photo.jpg'];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $w = $i * 100;
+            $h = $i * 75;
+            $file = "photo-{$w}x{$h}.jpg";
+            $sizes["custom_{$i}"] = ['file' => $file, 'width' => $w, 'height' => $h];
+            $expected[] = "2024/03/{$file}";
+        }
+
+        $detector->addAttachment('2024/03/photo.jpg', ['sizes' => $sizes]);
+
+        foreach ($expected as $path) {
+            $this->assertTrue($detector->isKnown($path), "Expected {$path} to be known");
+        }
+
+        $this->assertSame(13, $detector->getKnownCount());
+    }
+
+    #[Test]
+    public function it_handles_malformed_sizes_entries(): void
+    {
+        $detector = new OrphanDetector();
+        $detector->addAttachment('2024/03/photo.jpg', [
+            'sizes' => [
+                'thumbnail' => ['file' => 'photo-150x150.jpg', 'width' => 150, 'height' => 150],
+                'broken_no_file' => ['width' => 300, 'height' => 200],
+                'broken_empty_file' => ['file' => '', 'width' => 400, 'height' => 300],
+                'broken_not_array' => 'invalid',
+            ],
+        ]);
+
+        $this->assertTrue($detector->isKnown('2024/03/photo.jpg'));
+        $this->assertTrue($detector->isKnown('2024/03/photo-150x150.jpg'));
+        // Malformed entries should not add anything.
+        $this->assertSame(2, $detector->getKnownCount());
+    }
+
+    #[Test]
+    public function it_handles_unicode_filenames(): void
+    {
+        $detector = new OrphanDetector();
+        $detector->addAttachment('2024/03/café-photo.jpg', [
+            'sizes' => [
+                'thumbnail' => ['file' => 'café-photo-150x150.jpg', 'width' => 150, 'height' => 150],
+            ],
+        ]);
+
+        $this->assertTrue($detector->isKnown('2024/03/café-photo.jpg'));
+        $this->assertTrue($detector->isKnown('2024/03/café-photo-150x150.jpg'));
+        $this->assertFalse($detector->isKnown('2024/03/cafe-photo.jpg'));
+    }
+
+    #[Test]
+    public function it_handles_deeply_nested_paths(): void
+    {
+        $detector = new OrphanDetector();
+        $detector->addAttachment('2024/03/subdir/deep/photo.jpg', [
+            'sizes' => [
+                'thumbnail' => ['file' => 'photo-150x150.jpg', 'width' => 150, 'height' => 150],
+            ],
+        ]);
+
+        $this->assertTrue($detector->isKnown('2024/03/subdir/deep/photo.jpg'));
+        $this->assertTrue($detector->isKnown('2024/03/subdir/deep/photo-150x150.jpg'));
+    }
+
+    #[Test]
+    public function it_handles_spaces_in_filenames(): void
+    {
+        $detector = new OrphanDetector();
+        $detector->addAttachment('2024/03/my photo (1).jpg', [
+            'sizes' => [
+                'thumbnail' => ['file' => 'my photo (1)-150x150.jpg', 'width' => 150, 'height' => 150],
+            ],
+        ]);
+
+        $this->assertTrue($detector->isKnown('2024/03/my photo (1).jpg'));
+        $this->assertTrue($detector->isKnown('2024/03/my photo (1)-150x150.jpg'));
+    }
 }

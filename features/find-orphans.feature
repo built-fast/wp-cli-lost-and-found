@@ -20,18 +20,30 @@ Feature: Find orphaned files in WordPress uploads
     And the return code should be 0
 
   Scenario: Detects orphaned files not tracked in the database
-    Given a WP install
+    Given I run `wp option update uploads_use_yearmonth_folders 0`
 
-    # Create a real attachment via WP-CLI so the DB has records.
-    When I run `wp media import 'https://via.placeholder.com/300.png' --title="Known Image" --porcelain`
-    Then save STDOUT as {ATTACHMENT_ID}
+    # Create a real attachment via wp eval so the DB has records.
+    When I run `wp eval '$id = wp_insert_attachment(["post_title" => "Known Image", "post_mime_type" => "image/jpeg", "post_status" => "inherit"], "known-image.jpg"); update_post_meta($id, "_wp_attached_file", "known-image.jpg"); update_post_meta($id, "_wp_attachment_metadata", ["file" => "known-image.jpg", "sizes" => ["thumbnail" => ["file" => "known-image-150x150.jpg"]]]); echo "ok";'`
+    Then STDOUT should contain:
+      """
+      ok
+      """
+
+    Given a wp-content/uploads/known-image.jpg file:
+      """
+      real image
+      """
+    And a wp-content/uploads/known-image-150x150.jpg file:
+      """
+      real thumb
+      """
 
     # Plant orphan files directly in uploads.
-    Given a wp-content/uploads/2024/03/orphan-image.jpg file:
+    And a wp-content/uploads/orphan-image.jpg file:
       """
       fake image content
       """
-    And a wp-content/uploads/2024/03/orphan-thumb-150x150.jpg file:
+    And a wp-content/uploads/orphan-thumb-150x150.jpg file:
       """
       fake thumb content
       """
@@ -49,6 +61,10 @@ Feature: Find orphaned files in WordPress uploads
       """
       orphan-thumb-150x150.jpg
       """
+    And STDOUT should not contain:
+      """
+      known-image.jpg
+      """
     And the return code should be 0
 
   Scenario: Excludes cache directory by default
@@ -62,9 +78,9 @@ Feature: Find orphaned files in WordPress uploads
       """
 
     When I run `wp media find-orphans --format=json`
-    Then STDOUT should contain:
+    Then STDOUT should be JSON containing:
       """
-      "skipped_dirs":["cache"]
+      {"skipped_count":1}
       """
     And STDOUT should contain:
       """
@@ -124,23 +140,28 @@ Feature: Find orphaned files in WordPress uploads
       """
 
   Scenario: Finds orphans from a file list (S3 mode)
-    # Import an image so DB has a known attachment.
-    When I run `wp media import 'https://via.placeholder.com/300.png' --title="Known" --porcelain`
-    Then save STDOUT as {ATTACHMENT_ID}
+    Given I run `wp option update uploads_use_yearmonth_folders 0`
 
-    # Get the attached file path so we can build the file list.
-    When I run `wp post meta get {ATTACHMENT_ID} _wp_attached_file`
-    Then save STDOUT as {ATTACHED_FILE}
+    # Create a known attachment in the DB.
+    When I run `wp eval '$id = wp_insert_attachment(["post_title" => "Known", "post_mime_type" => "image/jpeg", "post_status" => "inherit"], "s3-known.jpg"); update_post_meta($id, "_wp_attached_file", "s3-known.jpg"); update_post_meta($id, "_wp_attachment_metadata", ["file" => "s3-known.jpg", "sizes" => ["thumbnail" => ["file" => "s3-known-150x150.jpg"]]]); echo "ok";'`
+    Then STDOUT should contain:
+      """
+      ok
+      """
 
     # Create a file list with the known file + an orphan.
-    Given a /tmp/test-file-list.txt file:
+    Given a wp-content/uploads/test-file-list.txt file:
       """
-      {ATTACHED_FILE}
+      s3-known.jpg
+      s3-known-150x150.jpg
       2024/03/s3-orphan.jpg
       2024/03/s3-orphan-150x150.jpg
       """
 
-    When I run `wp media find-orphans --file-list=/tmp/test-file-list.txt --format=json`
+    When I run `wp eval 'echo rtrim(wp_upload_dir()["basedir"], "/") . "/test-file-list.txt";'`
+    Then save STDOUT as {FILE_LIST_PATH}
+
+    When I run `wp media find-orphans --file-list={FILE_LIST_PATH} --format=json`
     Then STDOUT should be JSON containing:
       """
       {"status":"completed","source":"s3"}
@@ -149,20 +170,29 @@ Feature: Find orphaned files in WordPress uploads
       """
       s3-orphan.jpg
       """
+    And STDOUT should not contain:
+      """
+      s3-known.jpg
+      """
     And the return code should be 0
 
   Scenario: Reports known file count correctly
-    When I run `wp media import 'https://via.placeholder.com/300.png' --title="Image 1" --porcelain`
-    And I run `wp media import 'https://via.placeholder.com/600.png' --title="Image 2" --porcelain`
+    Given I run `wp option update uploads_use_yearmonth_folders 0`
+
+    When I run `wp eval '$id1 = wp_insert_attachment(["post_title" => "Image 1", "post_mime_type" => "image/jpeg", "post_status" => "inherit"], "img1.jpg"); update_post_meta($id1, "_wp_attached_file", "img1.jpg"); update_post_meta($id1, "_wp_attachment_metadata", ["file" => "img1.jpg", "sizes" => ["thumbnail" => ["file" => "img1-150x150.jpg"]]]); $id2 = wp_insert_attachment(["post_title" => "Image 2", "post_mime_type" => "image/jpeg", "post_status" => "inherit"], "img2.jpg"); update_post_meta($id2, "_wp_attached_file", "img2.jpg"); update_post_meta($id2, "_wp_attachment_metadata", ["file" => "img2.jpg", "sizes" => ["thumbnail" => ["file" => "img2-150x150.jpg"]]]); echo "ok";'`
+    Then STDOUT should contain:
+      """
+      ok
+      """
 
     When I run `wp media find-orphans --format=json`
     Then STDOUT should be JSON containing:
       """
       {"status":"completed"}
       """
-    # known_files should be > 0 (exact count depends on WP thumbnail config).
-    And STDOUT should not contain:
+    # known_files should be > 0 (4 files: 2 originals + 2 thumbnails).
+    And STDOUT should be JSON containing:
       """
-      "known_files":0
+      {"known_files":4}
       """
     And the return code should be 0

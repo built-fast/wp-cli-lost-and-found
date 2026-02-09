@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace WpOrphanage;
 
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use WP_CLI;
 use WP_CLI_Command;
 
@@ -79,18 +77,24 @@ class FindOrphansCommand extends WP_CLI_Command
         $basedir = $uploadDir['basedir'];
 
         // Step 1: Build known files set from attachment database.
-        $detector = new OrphanDetector($excludeDirs);
-        $this->loadAttachments($wpdb, $detector);
+        $scanner = new OrphanScanner(new OrphanDetector($excludeDirs));
+        $scanner->loadAttachments($wpdb);
+        $detector = $scanner->getDetector();
 
         WP_CLI::debug(sprintf('Built known files set: %d entries', $detector->getKnownCount()));
 
         // Step 2: Get actual file list and detect orphans.
         $source = $fileList !== null ? 's3' : 'filesystem';
-        $actualFiles = $fileList !== null
-            ? $this->readFileList($fileList)
-            : $this->scanFilesystem($basedir);
 
-        $result = $detector->detect($actualFiles);
+        try {
+            $actualFiles = $fileList !== null
+                ? $scanner->readFileList($fileList)
+                : $scanner->scanFilesystem($basedir);
+
+            $result = $detector->detect($actualFiles);
+        } catch (\RuntimeException $e) {
+            WP_CLI::error($e->getMessage());
+        }
 
         // Step 3: Build output.
         $durationMs = (int) ((microtime(true) - $startTime) * 1000);
@@ -127,109 +131,6 @@ class FindOrphansCommand extends WP_CLI_Command
         } else {
             $this->renderTable($output);
         }
-    }
-
-    /**
-     * Query all attachments from the database and register them with the detector.
-     *
-     * @param \wpdb $wpdb WordPress database instance.
-     */
-    private function loadAttachments(object $wpdb, OrphanDetector $detector): void
-    {
-        $perPage = 100;
-        $page = 1;
-
-        do {
-            $offset = ($page - 1) * $perPage;
-
-            /** @var list<object{ID: int}> $attachments */
-            $attachments = $wpdb->get_results($wpdb->prepare(
-                "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' LIMIT %d OFFSET %d",
-                $perPage,
-                $offset
-            ));
-
-            foreach ($attachments as $attachment) {
-                $file = get_post_meta((int) $attachment->ID, '_wp_attached_file', true);
-                $meta = wp_get_attachment_metadata((int) $attachment->ID);
-
-                if (is_string($file) && $file !== '') {
-                    $detector->addAttachment($file, is_array($meta) ? $meta : []);
-                }
-            }
-
-            $page++;
-        } while (count($attachments) === $perPage);
-    }
-
-    /**
-     * Iterate files on the local filesystem under the uploads basedir.
-     *
-     * @return \Generator<int, array{path: string, size: int, mtime: int}>
-     */
-    private function scanFilesystem(string $basedir): \Generator
-    {
-        if (! is_dir($basedir)) {
-            WP_CLI::warning("Uploads directory does not exist: {$basedir}");
-
-            return;
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($basedir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                continue;
-            }
-
-            $relativePath = ltrim(str_replace($basedir, '', $file->getPathname()), '/');
-
-            yield [
-                'path' => $relativePath,
-                'size' => (int) $file->getSize(),
-                'mtime' => (int) $file->getMTime(),
-            ];
-        }
-    }
-
-    /**
-     * Read file entries from a text file.
-     *
-     * Supports two formats:
-     *   - TSV: path\tsize\tmtime (from bash wrapper's S3 listing)
-     *   - Plain text: one path per line (size and mtime will be 0)
-     *
-     * @return \Generator<int, array{path: string, size: int, mtime: int}>
-     */
-    private function readFileList(string $filePath): \Generator
-    {
-        $handle = fopen($filePath, 'r');
-
-        if ($handle === false) {
-            WP_CLI::error("Cannot open file list: {$filePath}");
-        }
-
-        while (($line = fgets($handle)) !== false) {
-            $line = trim($line);
-
-            if ($line === '') {
-                continue;
-            }
-
-            $parts = explode("\t", $line);
-            $relativePath = $parts[0];
-
-            yield [
-                'path' => $relativePath,
-                'size' => isset($parts[1]) ? (int) $parts[1] : 0,
-                'mtime' => isset($parts[2]) ? (int) $parts[2] : 0,
-            ];
-        }
-
-        fclose($handle);
     }
 
     /**

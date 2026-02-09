@@ -16,7 +16,7 @@ Feature: S3 file list mode
       """
 
     # TSV file list: known files + orphan + cache entry.
-    Given a /tmp/s3-tsv-list.txt file:
+    Given a wp-content/uploads/s3-tsv-list.txt file:
       """
       s3-photo.jpg	5000	1710000000
       s3-photo-150x150.jpg	1000	1710000000
@@ -24,7 +24,10 @@ Feature: S3 file list mode
       cache/cached-file.tmp	500	1710000002
       """
 
-    When I run `wp media find-orphans --file-list=/tmp/s3-tsv-list.txt --format=json`
+    When I run `wp eval 'echo rtrim(wp_upload_dir()["basedir"], "/") . "/s3-tsv-list.txt";'`
+    Then save STDOUT as {FILE_LIST_PATH}
+
+    When I run `wp media find-orphans --file-list={FILE_LIST_PATH} --format=json`
     Then the return code should be 0
     And STDOUT should be JSON containing:
       """
@@ -46,14 +49,17 @@ Feature: S3 file list mode
       ok
       """
 
-    Given a /tmp/s3-plain-list.txt file:
+    Given a wp-content/uploads/s3-plain-list.txt file:
       """
       plain-photo.jpg
       plain-orphan.jpg
       plain-orphan-300x200.jpg
       """
 
-    When I run `wp media find-orphans --file-list=/tmp/s3-plain-list.txt --format=json`
+    When I run `wp eval 'echo rtrim(wp_upload_dir()["basedir"], "/") . "/s3-plain-list.txt";'`
+    Then save STDOUT as {FILE_LIST_PATH}
+
+    When I run `wp media find-orphans --file-list={FILE_LIST_PATH} --format=json`
     Then the return code should be 0
     And STDOUT should be JSON containing:
       """
