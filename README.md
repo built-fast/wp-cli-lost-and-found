@@ -9,6 +9,12 @@ Detect and remove orphaned files in WordPress uploads directories.
 
 Scans the uploads directory and cross-references against the WordPress attachment database to identify files not tracked as media library items. Supports local filesystem scanning and S3 object listings.
 
+## The problem
+
+WordPress stores uploaded media as files in `wp-content/uploads/` and tracks each one as an attachment post in the database. Over time, the two get out of sync: attachments get deleted through the admin but their files stay on disk, plugins drop temporary or generated files into uploads, and files land there via FTP or deployment scripts without ever being registered in the media library. The result is a steadily growing pool of orphaned files that waste storage, inflate backups, and make it harder to audit what's actually in use.
+
+There's no built-in way to reconcile the filesystem against the database. This plugin scans every file in uploads, checks whether it belongs to a known attachment (including thumbnails, scaled originals, and editor variants), and reports or removes anything that doesn't.
+
 ## Requirements
 
 - PHP 8.1+
